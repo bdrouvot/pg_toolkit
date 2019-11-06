@@ -73,11 +73,11 @@ do
   dsk_lp_len=`dd status=none bs=8192 count=1 if=$relpath skip=$blk | od -A n -t x2 -j $skipbytes -N 2 | sed 's/^ *//'`
   dsk_lp_len=`echo $((0x$dsk_lp_len >> 1))`
   dsk_lp_flags="$((2#`dc -e "16i2o${dsk_lp_flags}p" | cut -c7-8`))"
-  dsk_xmin=`dd status=none bs=8192 count=1 if=$relpath skip=$blk | od -A n -t d2 -j $dsk_lp_off -N 2`
+  dsk_xmin=`dd status=none bs=8192 count=1 if=$relpath skip=$blk | od -A n -t d4 -j $dsk_lp_off -N 4`
   toread=$(( 4 + $dsk_lp_off ))
-  dsk_xmax=`dd status=none bs=8192 count=1 if=$relpath skip=$blk | od -A n -t d2 -j $toread -N 2`
+  dsk_xmax=`dd status=none bs=8192 count=1 if=$relpath skip=$blk | od -A n -t d4 -j $toread -N 4`
   toread=$(( 8 + $dsk_lp_off ))
-  dsk_t_field3=`dd status=none bs=8192 count=1 if=$relpath skip=$blk | od -A n -t u4 -j $toread -N 4`
+  dsk_t_field3=`dd status=none bs=8192 count=1 if=$relpath skip=$blk | od -A n -t u8 -j $toread -N 8`
   toread=$(( 12 + $dsk_lp_off ))
   dsk_ctid_block_number=`dd status=none bs=8192 count=1 if=$relpath skip=$blk | od -A n -t x4 -j $toread -N 4`
   toread=$(( 16 + $dsk_lp_off ))
