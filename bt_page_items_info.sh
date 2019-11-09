@@ -116,7 +116,7 @@ done
 fi
 
 if [ "$inspect" = "mem" -o "$inspect" = "both" ] ; then
-from_mem=`psql -tA -c "SELECT * FROM bt_page_items(get_raw_page('$bt', $blk))"`
+from_mem=`psql -tA -c "SELECT * FROM bt_page_items('$bt', $blk)"`
 
 IFS=$'\n'
 for item in `echo "$from_mem"`
