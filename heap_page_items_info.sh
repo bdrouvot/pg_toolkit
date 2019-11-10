@@ -72,7 +72,7 @@ do
   skipbytes=$(( 2 + $skipbytes ))
   dsk_lp_len=`dd status=none bs=8192 count=1 if=$relpath skip=$blk | od -A n -t x2 -j $skipbytes -N 2 | sed 's/^ *//'`
   dsk_lp_len=`echo $((0x$dsk_lp_len >> 1))`
-  dsk_lp_flags="$((2#`dc -e "16i2o${dsk_lp_flags}p" | cut -c7-8`))"
+  dsk_lp_flags="$((2#`echo "ibase=16;obase=2;${dsk_lp_flags}" | bc | rev | cut -c16,17 | rev`))"
   dsk_xmin=`dd status=none bs=8192 count=1 if=$relpath skip=$blk | od -A n -t d4 -j $dsk_lp_off -N 4`
   toread=$(( 4 + $dsk_lp_off ))
   dsk_xmax=`dd status=none bs=8192 count=1 if=$relpath skip=$blk | od -A n -t d4 -j $toread -N 4`
