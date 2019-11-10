@@ -1,6 +1,6 @@
 #!/bin/bash
 
-if [ "$1" = "--help" ] ; then
+if [ "$1" = "--help" -o $# -eq 0 ] ; then
   echo ""
   echo "Usage: "
   echo ""
