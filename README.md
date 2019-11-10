@@ -11,3 +11,56 @@ Some scripts to compare pages in memory and on disk
 * `bt_metap_info.sh`: to inspect B-tree index's metapage from memory and from disk
 * `bt_page_items_info.sh`: to inspect B-tree index's page items from memory and from disk
 * `bt_page_stats_info.sh`: to get summary information about single pages of B-tree indexes from memory and from disk
+
+Example:
+
+    $ ./bt_page_stats_info.sh
+
+    Usage: 
+
+    -b: block to inspect
+    -p: relation path on disk
+    -bt: btree name
+    -i: where to inspect (disk, memory, both)
+
+    $ ./bt_page_stats_info.sh -b 15 -p /usr/local/pgsql12.0/data/base/13593/139931 -bt bdtidx -i both
+
+    BLOCK   = 15
+    PATH    = /usr/local/pgsql12.0/data/base/13593/139931
+    BTREE   = bdtidx
+    INSPECT = both
+    
+    from | blkno | type | live_items | dead_items | avg_item_size | free_size  | btpo_prev | btpo_next | btpo | btpo_flags
+    -----+-------+------+------------+------------+---------------+------------+-----------+-----------+------+-----------
+    dsk  | 15    | l    | 239        | 0          | 16            |  3368      | 0         | 111       | 0    | 1          
+    mem  | 15    | l    | 239        | 0          | 16            |  3368      | 0         | 111       | 0    | 1          
+    
+    $ psql -c "insert into bdt select generate_series(1, 5000),generate_series(1,5000),'bdt'" 
+    INSERT 0 5000
+    
+    $ ./bt_page_stats_info.sh -b 15 -p /usr/local/pgsql12.0/data/base/13593/139931 -bt bdtidx -i both
+    
+    BLOCK   = 15
+    PATH    = /usr/local/pgsql12.0/data/base/13593/139931
+    BTREE   = bdtidx
+    INSPECT = both
+    
+    from | blkno | type | live_items | dead_items | avg_item_size | free_size  | btpo_prev | btpo_next | btpo | btpo_flags
+    -----+-------+------+------------+------------+---------------+------------+-----------+-----------+------+-----------
+    dsk  | 15    | l    | 239        | 0          | 16            |  3368      | 0         | 111       | 0    | 1          
+    mem  | 15    | l    | 273        | 0          | 16            |  2688      | 0         | 111       | 0    | 1          
+    
+    $ psql -c "checkpoint"
+    CHECKPOINT
+    
+    $ ./bt_page_stats_info.sh -b 15 -p /usr/local/pgsql12.0/data/base/13593/139931 -bt bdtidx -i both
+    
+    BLOCK   = 15
+    PATH    = /usr/local/pgsql12.0/data/base/13593/139931
+    BTREE   = bdtidx
+    INSPECT = both
+    
+    from | blkno | type | live_items | dead_items | avg_item_size | free_size  | btpo_prev | btpo_next | btpo | btpo_flags
+    -----+-------+------+------------+------------+---------------+------------+-----------+-----------+------+-----------
+    dsk  | 15    | l    | 273        | 0          | 16            |  2688      | 0         | 111       | 0    | 1          
+    mem  | 15    | l    | 273        | 0          | 16            |  2688      | 0         | 111       | 0    | 1          
