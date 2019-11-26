@@ -57,6 +57,17 @@ echo "from | lp | lp_off | lp_flags | lp_len | t_xmin | t_xmax | t_field3 | t_ct
 echo "-----+----+--------+----------+--------+--------+--------+----------+---------------------+-------------+------------+--------"
 
 if [ "$inspect" = "disk" -o "$inspect" = "both" ] ; then
+filenumber=`expr $blk / 131072`
+blktoread=0
+if (( $filenumber >= 1 ))
+then
+relpath=$relpath.$filenumber
+blktoread=`expr 131072 \\* $filenumber`
+fi
+blkmem=$blk
+blk=`expr $blk - $blktoread`
+#echo "Reading block $blk in file $relpath....."
+
 dsk_lower=`dd status=none bs=8192 count=1 if=$relpath skip=$blk | od -A n -t d -j 12 -N 2`
 nbtuples=`expr $dsk_lower - 24`
 nbtuples=`expr $nbtuples / 4`
@@ -77,9 +88,11 @@ do
   toread=$(( 4 + $dsk_lp_off ))
   dsk_xmax=`dd status=none bs=8192 count=1 if=$relpath skip=$blk | od -A n -t d4 -j $toread -N 4`
   toread=$(( 8 + $dsk_lp_off ))
-  dsk_t_field3=`dd status=none bs=8192 count=1 if=$relpath skip=$blk | od -A n -t u8 -j $toread -N 8`
+  dsk_t_field3=`dd status=none bs=8192 count=1 if=$relpath skip=$blk | od -A n -t u4 -j $toread -N 4`
   toread=$(( 12 + $dsk_lp_off ))
-  dsk_ctid_block_number=`dd status=none bs=8192 count=1 if=$relpath skip=$blk | od -A n -t x4 -j $toread -N 4`
+  dsk_ctid_block_number=`dd status=none bs=8192 count=1 if=$relpath skip=$blk | od -A n -t x2 -j $toread -N 4 | sed 's/ //g'`
+  dsk_ctid_block_number=`echo $dsk_ctid_block_number | tr '[:lower:]' '[:upper:]'`
+  dsk_ctid_block_number=`echo "ibase=16;$dsk_ctid_block_number"|bc`
   toread=$(( 16 + $dsk_lp_off ))
   dsk_ctid_tuple_id=`dd status=none bs=8192 count=1 if=$relpath skip=$blk | od -A n -t u2 -j $toread -N 2`
   toread=$(( 18 + $dsk_lp_off ))
@@ -96,7 +109,7 @@ done
 fi
 
 if [ "$inspect" = "mem" -o "$inspect" = "both" ] ; then
-from_mem=`psql -tA -c "SELECT * FROM heap_page_items(get_raw_page('$tb', $blk))"`
+from_mem=`psql -tA -c "SELECT * FROM heap_page_items(get_raw_page('$tb', $blkmem))"`
 
 for lp in `echo "$from_mem"`
 do
