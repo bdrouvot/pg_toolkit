@@ -94,6 +94,17 @@ echo "from | blkno | type | live_items | dead_items | avg_item_size | free_size 
 echo "-----+-------+------+------------+------------+---------------+------------+-----------+-----------+------+-----------"
 
 if [ "$inspect" = "disk" -o "$inspect" = "both" ] ; then
+
+filenumber=`expr $blk / 131072`
+blktoread=0
+if (( $filenumber >= 1 ))
+then
+relpath=$relpath.$filenumber
+blktoread=`expr 131072 \\* $filenumber`
+fi
+blkmem=$blk
+blk=`expr $blk - $blktoread`
+
 dsk_lower=`dd status=none bs=8192 count=1 if=$relpath skip=$blk | od -A n -t d -j 12 -N 2`
 dsk_upper=`dd status=none bs=8192 count=1 if=$relpath skip=$blk | od -A n -t d -j 14 -N 2`
 # where is opaque?
@@ -166,11 +177,11 @@ dsk_avg_item_size=0
 fi
 fi
 
-printf "%-4s %1s %-5s %1s %-4s %1s %-10s %1s %-10s %1s %-13s %1s %-9s %1s %-9s %1s %-9s %1s %-4s %1s %-10s \n" 'dsk' '|' $blk '|' $dsk_p_type '|' $dsk_live_items '|' $dsk_dead_items '|' $dsk_avg_item_size '| ' "$dsk_free_size" '|' $dsk_btpo_prev '|' $dsk_btpo_next '|' $dsk_btpo '|' $dsk_btpo_flags
+printf "%-4s %1s %-5s %1s %-4s %1s %-10s %1s %-10s %1s %-13s %1s %-9s %1s %-9s %1s %-9s %1s %-4s %1s %-10s \n" 'dsk' '|' $blkmem '|' $dsk_p_type '|' $dsk_live_items '|' $dsk_dead_items '|' $dsk_avg_item_size '| ' "$dsk_free_size" '|' $dsk_btpo_prev '|' $dsk_btpo_next '|' $dsk_btpo '|' $dsk_btpo_flags
 
 
 if [ "$inspect" = "mem" -o "$inspect" = "both" ] ; then
-from_mem=`psql -tA -c "SELECT * FROM bt_page_stats('$bt', $blk)"`
+from_mem=`psql -tA -c "SELECT * FROM bt_page_stats('$bt', $blkmem)"`
 
 for item in `echo "$from_mem"`
 do
