@@ -64,3 +64,39 @@ Example:
     -----+-------+------+------------+------------+---------------+------------+-----------+-----------+------+-----------
     dsk  | 15    | l    | 273        | 0          | 16            |  2688      | 0         | 111       | 0    | 1          
     mem  | 15    | l    | 273        | 0          | 16            |  2688      | 0         | 111       | 0    | 1          
+
+from_files_only
+--------------------------
+
+Some scripts to get information from files only
+
+* `get_multixid_members.sh`: to retrieve multixid members from pg_multixact/offsets and pg_multixact/members
+
+Example:
+
+     $ ./get_multixid_members.sh -help
+
+     Usage:
+
+     -m: mxid
+     -d: DATA path
+
+     $ ./get_multixid_members.sh -m 3406700053 -d /usr/local/pgsql11.6/data
+
+     MXID   = 3406700053
+     DATA   = /usr/local/pgsql11.6/data
+
+     Members are:
+     1191575939
+     1191576073
+     1191576075
+
+     # Verification from postgres
+
+     #SELECT * FROM pg_get_multixact_members('3406700053');
+
+     xid     | mode
+     ------------+-------
+     1191575939 | keysh
+     1191576073 | keysh
+     1191576075 | keysh
