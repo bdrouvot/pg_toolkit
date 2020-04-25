@@ -100,3 +100,50 @@ Example:
      1191575939 | keysh
      1191576073 | keysh
      1191576075 | keysh
+
+* `get_xact_status.sh`: to retrieve xact status from the pg_xact directory  
+
+Example:
+
+     postgres=# select txid_current_snapshot();
+      txid_current_snapshot
+     -----------------------
+      31795295:31795295:
+     (1 row)
+     
+     postgres=# \! ./get_xact_status.sh -x 31795295 -d /usr/local/pgsql12.1-bench/data
+     
+     XID   = 31795295
+     DATA  = /usr/local/pgsql12.1-bench/data
+     
+     xid 31795295 status is: UNKNOWN
+     postgres=#
+     postgres=# insert into bdt values (1);
+     INSERT 0 1
+     postgres=# checkpoint;
+     CHECKPOINT
+     postgres=# \! ./get_xact_status.sh -x 31795295 -d /usr/local/pgsql12.1-bench/data
+     
+     XID   = 31795295
+     DATA  = /usr/local/pgsql12.1-bench/data
+     
+     Reading bits 7,8 in byte 2583 in page 10 of file 001E
+     
+     xid 31795295 status is: COMMITTED
+     postgres=#
+     postgres=# begin;
+     BEGIN
+     postgres=# insert into bdt values (1);
+     INSERT 0 1
+     postgres=# rollback;
+     ROLLBACK
+     postgres=# checkpoint;
+     CHECKPOINT
+     postgres=# \! ./get_xact_status.sh -x 31795296 -d /usr/local/pgsql12.1-bench/data
+     
+     XID   = 31795296
+     DATA  = /usr/local/pgsql12.1-bench/data
+     
+     Reading bits 1,2 in byte 2584 in page 10 of file 001E
+     
+     xid 31795296 status is: ABORTED
