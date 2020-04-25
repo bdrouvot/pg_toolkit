@@ -42,15 +42,16 @@ echo "DATA  = ${pgdata}"
 echo ""
 
 #See clog.c:
+#define CLOG_BITS_PER_XACT  2
+#define CLOG_XACTS_PER_BYTE 4
+#define CLOG_XACTS_PER_PAGE (BLCKSZ * CLOG_XACTS_PER_BYTE)
+
+# Assuming BLCKSZ is 8k
 #CLOG_BITS_PER_XACT      2
 #CLOG_XACTS_PER_BYTE 4
 #CLOG_XACTS_PER_PAGE 32768
-#CLOG_XACT_BITMASK 3
-#CLOG_LSNS_PER_PAGE 1024
-#sizeof(TransactionId) is 4
 
 PGCLOG="${pgdata}/pg_xact/"
-
 
 #define TransactionIdToPage(xid)    ((xid) / (TransactionId) CLOG_XACTS_PER_PAGE)
 pagenumber=`expr ${xid} / 32768`
