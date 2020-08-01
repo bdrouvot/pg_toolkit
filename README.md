@@ -4,7 +4,7 @@
 compare_disk_mem directory
 --------------------------
 
-Some scripts to compare pages in memory and on disk
+Some scripts to compare pages in memory and on disk (disk stands for outside Postgres shared buffers)
 
 * `page_header_info.sh`: to inspect page header from memory and from disk
 * `heap_page_items_info.sh`: to inspect heap page items from memory and from disk
