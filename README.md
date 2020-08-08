@@ -147,3 +147,43 @@ Example:
      Reading bits 1,2 in byte 2584 in page 10 of file 001E
      
      xid 31795296 status is: ABORTED
+
+c
+--------------------------
+
+Some utilities written in c
+
+* `flip_bit_and_checksum.bin`: flip one bit one by one and look for a checksum
+
+Example:
+
+say you got:
+
+     postgres=# select * from  bdt;
+     WARNING:  page verification failed, calculated checksum 20317 but expected 51845
+     ERROR:  invalid page in block 0 of relation base/13287/24877
+
+copy the block:
+
+     postgres=# select pg_relation_filepath('bdt');
+     pg_relation_filepath
+     ----------------------
+      base/13287/24877
+
+     $ dd status=none bs=8192 count=1 if=/usr/local/pgsql11.8-last/data/base/13287/24877 skip=0 of=./for_bit_flip_investigation
+
+launch the utility to look for the expected checksum:
+
+     $ ./flip_bit_and_checksum.bin
+     ./flip_bit_and_checksum.bin: Flip one bit one by one and compute the checksum.
+     ./flip_bit_and_checksum.bin: The bit that has been flipped is displayed if the computed checksum matches the one in argument.
+
+     Usage:
+     ./flip_bit_and_checksum.bin [OPTION] <block_path>
+     -c, --checksum=CHECKSUM to look for
+
+     $ ./flip_bit_and_checksum.bin ./for_bit_flip_investigation -c 51845
+     Warning: Keep in mind that numbering starts from 0 for both bit and byte
+     checksum ca85 (51845) found while flipping bit 1926 (bit 6 in byte 240)
+
+so by flipping bit 1926 the expected checksum is returned. It's an indication that the corruption might be due to a bit flip at that position.
