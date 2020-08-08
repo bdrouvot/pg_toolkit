@@ -186,4 +186,5 @@ launch the utility to look for the expected checksum:
      Warning: Keep in mind that numbering starts from 0 for both bit and byte
      checksum ca85 (51845) found while flipping bit 1926 (bit 6 in byte 240)
 
-so by flipping bit 1926 the expected checksum is returned. It's an indication that the corruption might be due to a bit flip at that position.
+so by flipping bit 1926 the expected checksum is returned. It's an indication that the corruption might be due to a bit flip at that position.  
+There is only one bit different from the original block at any time.
