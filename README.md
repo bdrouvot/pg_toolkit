@@ -181,9 +181,10 @@ launch the utility to look for the expected checksum:
 	The bit that has been flipped is displayed if the computed checksum matches the one in argument.
 
 	Usage:
-	  ./flip_bit_and_checksum.bin [OPTION] <block_path>
-	  -c, --checksum=CHECKSUM to look for
-	  -b, --blockno=BLOCKNO block offset from relation
+	./flip_bit_and_checksum.bin [OPTION] <block_path>
+	-c, --checksum to look for
+	-b, --blockno block offset from relation (as a result of segmentno * RELSEG_SIZE + blockoffset)
+	-d, --disable_pd_upper_flip disable flipping bits in pd_upper (default false)
 
      $ ./flip_bit_and_checksum.bin ./for_bit_flip_investigation -c 51845 -b 0
      Warning: Keep in mind that numbering starts from 0 for both bit and byte
