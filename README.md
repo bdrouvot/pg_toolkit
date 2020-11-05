@@ -174,15 +174,18 @@ copy the block:
 
 launch the utility to look for the expected checksum:
 
-     $ ./flip_bit_and_checksum.bin
-     ./flip_bit_and_checksum.bin: Flip one bit one by one and compute the checksum.
-     ./flip_bit_and_checksum.bin: The bit that has been flipped is displayed if the computed checksum matches the one in argument.
+	$ ./flip_bit_and_checksum.bin
 
-     Usage:
-     ./flip_bit_and_checksum.bin [OPTION] <block_path>
-     -c, --checksum=CHECKSUM to look for
+	./flip_bit_and_checksum.bin:
+	Flip one bit one by one and compute the checksum.
+	The bit that has been flipped is displayed if the computed checksum matches the one in argument.
 
-     $ ./flip_bit_and_checksum.bin ./for_bit_flip_investigation -c 51845
+	Usage:
+	  ./flip_bit_and_checksum.bin [OPTION] <block_path>
+	  -c, --checksum=CHECKSUM to look for
+	  -b, --blockno=BLOCKNO block offset from relation
+
+     $ ./flip_bit_and_checksum.bin ./for_bit_flip_investigation -c 51845 -b 0
      Warning: Keep in mind that numbering starts from 0 for both bit and byte
      checksum ca85 (51845) found while flipping bit 1926 (bit 6 in byte 240)
 

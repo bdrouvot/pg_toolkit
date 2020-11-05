@@ -34,27 +34,30 @@
 #undef strerror
 #endif
 
-uint16 compute_checksum(const char *page);
-uint16 open_file_flip_and_compute(const char *filepath, int bit);
+uint16 compute_checksum(const char *page, BlockNumber blockno);
+uint16 open_file_flip_and_compute(const char *filepath, int bit, BlockNumber blockno);
 static const char *progname;
 
 static void
 usage(void)
 {
-	printf("%s: Flip one bit one by one and compute the checksum.\n", progname);
-	printf("%s: The bit that has been flipped is displayed if the computed checksum matches the one in argument.\n\n", progname);
+	printf("\n");
+	printf("%s:\n", progname);
+	printf("Flip one bit one by one and compute the checksum.\n");
+	printf("The bit that has been flipped is displayed if the computed checksum matches the one in argument.\n\n");
 	printf("Usage:\n");
 	printf("  %s [OPTION] <block_path>\n", progname);
 	printf("  -c, --checksum=CHECKSUM to look for\n");
+	printf("  -b, --blockno=BLOCKNO block offset from relation\n");
 }
 
 uint16
-compute_checksum(const char *page)
+compute_checksum(const char *page, BlockNumber blockno)
 {
 	PageHeader	phdr = (PageHeader) page;
 	uint16 checksum;
 
-	checksum = pg_checksum_page((char *)page, 0);
+	checksum = pg_checksum_page((char *)page, blockno);
 
 	/*
 	 * In 9.2 or lower, pd_checksum is 1 since data checksums are not supported.
@@ -78,7 +81,7 @@ compute_checksum(const char *page)
 }
 
 uint16
-open_file_flip_and_compute(const char *filepath, int bit)
+open_file_flip_and_compute(const char *filepath, int bit, BlockNumber blockno)
 {
 	int fd;
 	char page[BLCKSZ];
@@ -99,7 +102,7 @@ open_file_flip_and_compute(const char *filepath, int bit)
 	byte = page [bit / 8];
 	byte ^= mask;
 	memset(page + (bit / 8), byte, 1);
-	return compute_checksum(page);
+	return compute_checksum(page, blockno);
 }
 
 int
@@ -111,17 +114,19 @@ main(int argc, char *argv[])
 	int                     option;
 	int                     optindex = 0;
 	int checksum = 0;
+	uint32 blockno = 0;
 
 
 	static struct option long_options[] = {
 		{"help", no_argument, NULL, '?'},
 		{"checksum", required_argument, NULL, 'c'},
+		{"blockno", required_argument, NULL, 'b'},
 		{NULL, 0, NULL, 0}
 	};
 
 	progname = argv[0];
 
-	if (argc <= 3)
+	if (argc <= 4)
 	{
 		usage();
 		exit(0);
@@ -136,13 +141,16 @@ main(int argc, char *argv[])
 		}
 	}
 
-	while ((option = getopt_long(argc, argv, "c:",
+	while ((option = getopt_long(argc, argv, "c:b:",
 							long_options, &optindex)) != -1)
 	{
 		switch (option)
 		{
 			case 'c':
 				checksum = atoi(optarg);
+				break;
+			case 'b':
+				blockno = atoi(optarg);
 				break;
 			default:
 				usage();
@@ -167,7 +175,7 @@ main(int argc, char *argv[])
 	file = argv[optind];
 
 	for (i=0; i < 8 * BLCKSZ; i++)
-		if (open_file_flip_and_compute(file, i) == checksum) {
+		if (open_file_flip_and_compute(file, i, blockno) == checksum) {
 			printf("Warning: Keep in mind that numbering starts from 0 for both bit and byte\n");
 			printf("checksum %x (%d) found while flipping bit %d (bit %d in byte %d)\n", checksum, checksum, i, i%8, i/8);
 		}
