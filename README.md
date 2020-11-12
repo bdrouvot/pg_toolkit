@@ -159,18 +159,18 @@ Example:
 
 say you got:
 
-     postgres=# select * from  bdt;
-     WARNING:  page verification failed, calculated checksum 20317 but expected 51845
-     ERROR:  invalid page in block 0 of relation base/13287/24877
+	postgres=# select * from bdt;
+	WARNING:  page verification failed, calculated checksum 34999 but expected 26532
+	ERROR:  invalid page in block 37 of relation base/13580/32812
 
 copy the block:
 
      postgres=# select pg_relation_filepath('bdt');
      pg_relation_filepath
      ----------------------
-      base/13287/24877
+	 base/13580/32812
 
-     $ dd status=none bs=8192 count=1 if=/usr/local/pgsql11.8-last/data/base/13287/24877 skip=0 of=./for_bit_flip_investigation
+     $ dd status=none bs=8192 count=1 if=/usr/local/pgsql13.0-fresh/data/base/13580/32812 skip=37 of=./for_bit_flip_investigation
 
 launch the utility to look for the expected checksum:
 
@@ -181,14 +181,15 @@ launch the utility to look for the expected checksum:
 	The bit that has been flipped is displayed if the computed checksum matches the one in argument.
 
 	Usage:
-	./flip_bit_and_checksum.bin [OPTION] <block_path>
-	-c, --checksum to look for
-	-b, --blockno block offset from relation (as a result of segmentno * RELSEG_SIZE + blockoffset)
-	-d, --disable_pd_upper_flip disable flipping bits in pd_upper (default false)
+	  ./flip_bit_and_checksum.bin -c checksum -b blockno [-d] <block_path>
+	  -c, --checksum to look for
+	  -b, --blockno block offset from relation (as a result of segmentno * RELSEG_SIZE + blockoffset)
+	  -d, --disable_pd_upper_flip disable flipping bits in pd_upper (default false)
 
-     $ ./flip_bit_and_checksum.bin ./for_bit_flip_investigation -c 51845 -b 0
-     Warning: Keep in mind that numbering starts from 0 for both bit and byte
-     checksum ca85 (51845) found while flipping bit 1926 (bit 6 in byte 240)
+	$ ./flip_bit_and_checksum.bin ./for_bit_flip_investigation -c 26532  -b 37
+	Warning: Keep in mind that numbering starts from 0 for both bit and byte
+	checksum 67a4 (26532) found while flipping bit 1926 (bit 6 in byte 240)
+	Dumping block with flipped bit to: ./for_bit_flip_investigation_with_bit_1926_flipped
 
 so by flipping bit 1926 the expected checksum is returned. It's an indication that the corruption might be due to a bit flip at that position.  
 There is only one bit different from the original block at any time.

@@ -20,12 +20,15 @@
 
 #define HANDLE_ERR(a)                   \
         if ((a) == -1) {                \
-                perror(argv[1]);        \
+                perror(argv[argc - 1]);        \
                 exit(errno);            \
         }
 
 #ifdef printf
 #undef printf
+#endif
+#ifdef snprintf
+#undef snprintf
 #endif
 #ifdef fprintf
 #undef fprintf
@@ -35,7 +38,7 @@
 #endif
 
 uint16 compute_checksum(const char *page, BlockNumber blockno);
-uint16 open_file_flip_and_compute(const char *filepath, int bit, BlockNumber blockno);
+void open_file_flip_and_compute(const char *filepath, int bit, BlockNumber blockno, int checksum);
 static const char *progname;
 
 static void
@@ -46,7 +49,7 @@ usage(void)
 	printf("Flip one bit one by one and compute the checksum.\n");
 	printf("The bit that has been flipped is displayed if the computed checksum matches the one in argument.\n\n");
 	printf("Usage:\n");
-	printf("  %s [OPTION] <block_path>\n", progname);
+	printf("  %s -c checksum -b blockno [-d] <block_path>\n", progname);
 	printf("  -c, --checksum to look for\n");
 	printf("  -b, --blockno block offset from relation (as a result of segmentno * RELSEG_SIZE + blockoffset) \n");
 	// To avoid some corner cases: pg_checksum_page: Assertion `!(((PageHeader) (&cpage->phdr))->pd_upper == 0)' failed
@@ -82,8 +85,8 @@ compute_checksum(const char *page, BlockNumber blockno)
 	return checksum;
 }
 
-uint16
-open_file_flip_and_compute(const char *filepath, int bit, BlockNumber blockno)
+void
+open_file_flip_and_compute(const char *filepath, int bit, BlockNumber blockno, int checksum)
 {
 	int fd;
 	char page[BLCKSZ];
@@ -104,7 +107,21 @@ open_file_flip_and_compute(const char *filepath, int bit, BlockNumber blockno)
 	byte = page [bit / 8];
 	byte ^= mask;
 	memset(page + (bit / 8), byte, 1);
-	return compute_checksum(page, blockno);
+
+	if (compute_checksum(page, blockno) == checksum)
+	{
+		char fpath[MAXPGPATH];
+		FILE *file;
+
+		printf("Warning: Keep in mind that numbering starts from 0 for both bit and byte\n");
+		printf("checksum %x (%d) found while flipping bit %d (bit %d in byte %d)\n", checksum, checksum, bit, bit%8, bit/8);
+
+		snprintf(fpath, MAXPGPATH, "%s_with_bit_%d_flipped", filepath, bit);
+		printf("Dumping block with flipped bit to: %s\n", fpath);
+		file = fopen(fpath, "wb");
+		fwrite(page, BLCKSZ, 1, file);
+		fclose(file);
+	}
 }
 
 int
@@ -130,7 +147,7 @@ main(int argc, char *argv[])
 
 	progname = argv[0];
 
-	if (argc <= 4)
+	if (argc <= 5)
 	{
 		usage();
 		exit(0);
@@ -165,8 +182,14 @@ main(int argc, char *argv[])
 		}
 	}
 
+    if (optind >= argc) {
+        printf ("Block path has not been provided\n");
+		exit (1);
+    }
+
 	errno = 0;
-	HANDLE_ERR(stat(argv[optind], &st));
+	HANDLE_ERR(stat(argv[argc - 1], &st));
+
 	if (!S_ISREG(st.st_mode))
 	{
 		fprintf(stderr, "The block must be a regular file\n");
@@ -179,17 +202,14 @@ main(int argc, char *argv[])
 		exit(1);
 	}
 
-	file = argv[optind];
+	file = argv[argc - 1];
 
 	for (i=0; i < 8 * BLCKSZ; i++)
 	{
 		if (!disable_flip_pd_upper && (i >= 112 && i <= 128))
 			continue;
 
-		if (open_file_flip_and_compute(file, i, blockno) == checksum) {
-			printf("Warning: Keep in mind that numbering starts from 0 for both bit and byte\n");
-			printf("checksum %x (%d) found while flipping bit %d (bit %d in byte %d)\n", checksum, checksum, i, i%8, i/8);
-		}
+		open_file_flip_and_compute(file, i, blockno, checksum);
 	}
 	return 0;
 }
