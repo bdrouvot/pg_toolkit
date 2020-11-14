@@ -184,7 +184,6 @@ launch the utility to look for the expected checksum:
 	  ./flip_bit_and_checksum.bin -c checksum -b blockno [-d] <block_path>
 	  -c, --checksum to look for
 	  -b, --blockno block offset from relation (as a result of segmentno * RELSEG_SIZE + blockoffset)
-	  -d, --disable_pd_upper_flip disable flipping bits in pd_upper (default false)
 
 	$ ./flip_bit_and_checksum.bin ./for_bit_flip_investigation -c 26532  -b 37
 	Warning: Keep in mind that numbering starts from 0 for both bit and byte

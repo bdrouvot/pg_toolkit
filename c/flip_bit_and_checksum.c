@@ -40,6 +40,9 @@
 uint16 compute_checksum(const char *page, BlockNumber blockno);
 void open_file_flip_and_compute(const char *filepath, int bit, BlockNumber blockno, int checksum);
 static const char *progname;
+int isPowerOfTwo(unsigned n);
+int findBitSetPosition(unsigned n);
+int flippdupper(const char *filepath);
 
 static void
 usage(void)
@@ -52,8 +55,70 @@ usage(void)
 	printf("  %s -c checksum -b blockno [-d] <block_path>\n", progname);
 	printf("  -c, --checksum to look for\n");
 	printf("  -b, --blockno block offset from relation (as a result of segmentno * RELSEG_SIZE + blockoffset) \n");
-	// To avoid some corner cases: pg_checksum_page: Assertion `!(((PageHeader) (&cpage->phdr))->pd_upper == 0)' failed
-	printf("  -d, --disable_pd_upper_flip disable flipping bits in pd_upper (default false)\n");
+}
+
+int isPowerOfTwo(unsigned n)
+{
+	return n && (!(n & (n - 1)));
+}
+
+int findBitSetPosition(unsigned n)
+{
+	unsigned i;
+	unsigned pos;
+
+	if (!isPowerOfTwo(n))
+		return -1;
+
+	i = pos = 1;
+
+	// Iterate through bits of n till we find a set bit
+	// i&n will be non-zero only when 'i' and 'n' have a set bit
+	// at same position
+	while (!(i & n)) {
+		// Unset current bit and set the next bit in 'i'
+		i = i << 1;
+		// increment position
+		++pos;
+	}
+	return pos;
+}
+
+int
+flippdupper(const char *filepath)
+{
+
+	int fd;
+	unsigned char pd_upper[2];
+	uint16 p_upper;
+	unsigned pos;
+
+	fd = open(filepath, O_RDONLY);
+
+	if (fd <= 0)
+	{
+		fprintf(stderr, "%s: %s\n", strerror(errno), filepath);
+		exit(2);
+	}
+
+	// pd_upper starts at bit 112
+	lseek(fd, 112 / 8, SEEK_SET);
+	read(fd, &pd_upper, 2);
+	close(fd);
+
+	p_upper = *(uint16*) pd_upper;
+
+	pos = findBitSetPosition(p_upper);
+
+	if (pos != -1)
+	{
+		pos = pos + 111;
+		printf("bit %d will not be flipped to avoid current pd_upper (%u) to become 0\n", pos, *(uint16*) pd_upper);
+		printf("as that would trigger an assert on PageIsNew (aka pd_upper == 0)\n");
+		printf("\n");
+	}
+
+	return pos;
 }
 
 uint16
@@ -134,20 +199,18 @@ main(int argc, char *argv[])
 	int                     optindex = 0;
 	int checksum = 0;
 	uint32 blockno = 0;
-	bool disable_flip_pd_upper = true;
-
+	int bit_pos;
 
 	static struct option long_options[] = {
 		{"help", no_argument, NULL, '?'},
 		{"checksum", required_argument, NULL, 'c'},
 		{"blockno", required_argument, NULL, 'b'},
-		{"disable_pd_upper_flip", no_argument, NULL, 'd'},
 		{NULL, 0, NULL, 0}
 	};
 
 	progname = argv[0];
 
-	if (argc <= 5)
+	if (argc <= 4)
 	{
 		usage();
 		exit(0);
@@ -162,7 +225,7 @@ main(int argc, char *argv[])
 		}
 	}
 
-	while ((option = getopt_long(argc, argv, "c:b:d",
+	while ((option = getopt_long(argc, argv, "c:b:",
 							long_options, &optindex)) != -1)
 	{
 		switch (option)
@@ -172,9 +235,6 @@ main(int argc, char *argv[])
 				break;
 			case 'b':
 				blockno = atoi(optarg);
-				break;
-			case 'd':
-				disable_flip_pd_upper = false;
 				break;
 			default:
 				usage();
@@ -204,9 +264,16 @@ main(int argc, char *argv[])
 
 	file = argv[argc - 1];
 
+	// check if pd_upper has only one bit set
+	// get its position if that's the case
+	// -1 if not the case
+	// to avoid the assert on PageIsNew (aka pd_upper == 0)
+	// in checksum_impl.h
+	bit_pos = flippdupper (file);
+
 	for (i=0; i < 8 * BLCKSZ; i++)
 	{
-		if (!disable_flip_pd_upper && (i >= 112 && i <= 128))
+		if (i == bit_pos)
 			continue;
 
 		open_file_flip_and_compute(file, i, blockno, checksum);
