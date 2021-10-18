@@ -102,8 +102,12 @@ do
   toread=$(( 22 + $dsk_lp_off ))
   dsk_t_hoff=`dd status=none bs=8192 count=1 if=$relpath skip=$blk | od -A n -t u1 -j $toread -N 1`
 
-
+  if [ "${dsk_lp_len}" != "0" ]
+  then
   printf "%-4s %1s %-2s %1s %-6s %1s %-8s %1s %-6s %1s %-6s %1s %-6s %1s %-8s %1s %1s %-8s %1s %-4s %1s %1s %-11s %1s %-10s %1s %-6s \n" 'disk' '|' $lp '|' $dsk_lp_off '|' $dsk_lp_flags '|' $dsk_lp_len '|' $dsk_xmin '|' $dsk_xmax '|' $dsk_t_field3 '|' '(' $dsk_ctid_block_number ',' $dsk_ctid_tuple_id ')' '|' $dsk_t_infomask2 '|' $dsk_t_infomask '|' $dsk_t_hoff 
+  else
+  printf "%-4s %1s %-2s %1s %-6s %1s %-8s %1s %-6s %1s %-6s %1s %-6s %1s %-8s %1s %1s %-8s %1s %-4s %1s %1s %-11s %1s %-10s %1s %-6s \n" 'disk' '|' $lp '|' $dsk_lp_off '|' $dsk_lp_flags '|' $dsk_lp_len '|' ' ' '|' ' ' '|' ' ' '|' '                   ' '|' '    ' '|' '       ' '|' ' ' 
+  fi
   lp=$(( $lp + 1 ))
 done
 fi
